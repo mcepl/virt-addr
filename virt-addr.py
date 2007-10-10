@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+"""
+Requires fping.
+"""
 
 from lxml import etree
 import libvirt
@@ -9,6 +11,10 @@ import StringIO
 
 debug = False
 parser = etree.XMLParser(remove_blank_text=True)
+
+def checkIP(IPAddr):
+    retLevel = os.system("fping -r 1 -q %s 2>/dev/null" % IPAddr) >> 8
+    return retLevel == 0
 
 def macAddrFromdomObj(domObj):
     global parser
@@ -48,5 +54,5 @@ for domx in domains:
             if debug:
                 print >>sys.stderr,"ipDate = %s" % ipData
             break
-    if ipData:
+    if ipData and checkIP(ipData[0]):
         print "%s\t\t%s\t\t%s" % (domCurr.name(),ipData[0],ipData[1])
