@@ -4,15 +4,20 @@
 Requires fping.
 """
 
-from lxml import etree
+try:
+	from lxml import etree
+except ImportError:
+	import xml.etree.cElementTree as etree
 import libvirt
 import sys,os
 import StringIO
 
 debug = False
-parser = etree.XMLParser(remove_blank_text=True)
+parser = etree.XMLParser()
 
 def checkIP(IPAddr):
+    """TODO: fix
+    """
     retLevel = os.system("fping -r 1 -q %s 2>/dev/null" % IPAddr) >> 8
     return retLevel == 0
 
@@ -32,7 +37,7 @@ domains=conn.listDomainsID()
 if debug:
     print >>sys.stderr,"domains = %s" % domains
 
-messages=os.popen("grep 'dnsmasq.*DHCPACK' /var/log/daemon.log","r").readlines()
+messages=os.popen("grep 'dnsmasq.*DHCPACK' /var/log/messages","r").readlines()
 messages.reverse()
 
 for domx in domains:
