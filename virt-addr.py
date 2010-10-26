@@ -9,55 +9,27 @@ try:
 except ImportError:
 	import xml.etree.cElementTree as etree
 import libvirt
-import sys,os
+import sys,subprocess,os
 import StringIO
 
 debug = False
 parser = etree.XMLParser()
 
-def checkIP(IPAddr):
-    """TODO: fix
-    """
-    retLevel = os.system("fping -r 1 -q %s 2>/dev/null" % IPAddr) >> 8
-    return retLevel == 0
-
-def macAddrFromdomObj(domObj):
-    global parser
-    xmldescription=domObj.XMLDesc(0)
-    xmlDescFile=StringIO.StringIO(xmldescription)
-    tree = etree.parse(xmlDescFile,parser)
-    return tree.find("/devices/interface/mac").attrib["address"]
-
-conn = libvirt.openReadOnly("qemu:///system")
+conn = libvirt.openReadOnly(None)
 if conn == None:
     print 'Failed to open connection to the hypervisor'
     sys.exit(1)
 
-domains=conn.listDomainsID()
+domain=conn.lookupByName(sys.argv[1])
+desc = etree.fromstring(domain.XMLDesc(0))
+macAddr = desc.find("devices/interface[@type='network']/mac").attrib["address"].lower().strip()
 if debug:
-    print >>sys.stderr,"domains = %s" % domains
+    print >>sys.stderr,"XMLDesc = %s" % macAddr
 
-messages=os.popen("grep 'dnsmasq.*DHCPACK' /var/log/messages","r").readlines()
-messages.reverse()
-
-for domx in domains:
-    try:
-        domCurr = conn.lookupByID(domx)
-    except:
-        print 'Failed to find the domain with id=%d' % domx
-        sys.exit(1)
-    macaddr=macAddrFromdomObj(domCurr)
-    if debug:
-        print >>sys.stderr,"macaddr = %s" % macaddr
-    ipData = []
-    for lineStr in messages:
-        line = lineStr.strip().split()
-        if debug:
-            print >>sys.stderr,"line = %s" % line
-        if line[-1]==macaddr:
-            ipData=line[-2:]
-            if debug:
-                print >>sys.stderr,"ipDate = %s" % ipData
-            break
-    if ipData and checkIP(ipData[0]):
-        print "%s\t\t%s\t\t%s" % (domCurr.name(),ipData[0],ipData[1])
+output = subprocess.Popen(["arp", "-n"], stdout=subprocess.PIPE).communicate()[0]
+lines = [line.split() for line in output.split("\n")[1:]]
+if debug:
+	print lines
+IPaddr = [line[0] for line in lines if (line and (line[2] == macAddr))]
+if IPaddr:
+	print IPaddr[0]
