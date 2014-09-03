@@ -1,0 +1,11 @@
+#!/bin/sh
+set -x
+
+LOGIN=$(echo $1|cut -s -d@ -f1)
+
+if [ "x$LOGIN" == "x" ] ; then
+    ssh $(virt-addr $1)
+else
+    MACHINE=$(echo $1|cut -s -d@ -f2)
+    ssh ${LOGIN}@$(virt-addr $MACHINE)
+fi
