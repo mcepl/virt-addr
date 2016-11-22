@@ -31,6 +31,6 @@ output = subprocess.Popen(["arp", "-n"],
 lines = [line.split() for line in output.split("\n")[1:]]
 logging.debug(lines)
 
-IPaddr = [line[0] for line in lines if (line and (line[2] == macAddr))]
+IPaddr = [line[0] for line in lines if line and (line[2] == macAddr)]
 if IPaddr:
     print(IPaddr[0])

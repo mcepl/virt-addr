@@ -1,6 +1,4 @@
 #!/bin/sh
-set -x
-
 LOGIN=$(echo $1|cut -s -d@ -f1)
 
 if [ "x$LOGIN" == "x" ] ; then
